@@ -154,16 +154,16 @@ void Bayang_send_packet(u8 bind)
                   | GET_FLAG(VID_AUX, BAYANG_FLAG_VIDEO);
         packet[3] = GET_FLAG(LED_AUX, BAYANG_FLAG_INVERT)
                   | GET_FLAG(ESTOP_AUX, BAYANG_FLAG_EMG_STOP);
-        chanval.value = map(ppm[ROLL], PPM_MIN, PPM_MAX, 0, 0x3ff);   // aileron
+        chanval.value = map(PPM[ROLL], PPM_MIN, PPM_MAX, 0, 0x3ff);   // aileron
         packet[4] = chanval.bytes.msb + DYNTRIM(chanval.value);
         packet[5] = chanval.bytes.lsb;
-        chanval.value = map(ppm[PITCH], PPM_MIN, PPM_MAX, 0, 0x3ff);   // elevator
+        chanval.value = map(PPM[PITCH], PPM_MIN, PPM_MAX, 0, 0x3ff);   // elevator
         packet[6] = chanval.bytes.msb + DYNTRIM(chanval.value);
         packet[7] = chanval.bytes.lsb;
-        chanval.value = map(ppm[THROTTLE], PPM_MIN, PPM_MAX, 0, 0x3ff);   // throttle
+        chanval.value = map(PPM[THROTTLE], PPM_MIN, PPM_MAX, 0, 0x3ff);   // throttle
         packet[8] = chanval.bytes.msb + 0x7c;
         packet[9] = chanval.bytes.lsb;
-        chanval.value = map(ppm[YAW], PPM_MIN, PPM_MAX, 0, 0x3ff);   // rudder
+        chanval.value = map(PPM[YAW], PPM_MIN, PPM_MAX, 0, 0x3ff);   // rudder
         packet[10] = chanval.bytes.msb + DYNTRIM(chanval.value);
         packet[11] = chanval.bytes.lsb;
     }
@@ -226,4 +226,3 @@ static uint8_t Bayang_check_rx()
     }
     return 0;
 }
-
