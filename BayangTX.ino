@@ -3,6 +3,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <EEPROM.h>
+
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
@@ -13,7 +14,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, 0);
 
 RunningAverage TRA(3);
 RunningAverage RRA(3);
@@ -83,7 +84,8 @@ uint8_t transmitterID[4];
 uint8_t current_protocol;
 uint8_t packet[32];
 
-static uint16_t PPM[12] = {PPM_MIN,PPM_MIN,PPM_MIN,PPM_MIN,PPM_MID,PPM_MID, PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,};
+static uint16_t PPM[12] = {PPM_MIN,PPM_MIN,PPM_MIN,PPM_MIN,PPM_MID,PPM_MID,
+                           PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,};
 
 static void ReadFlash(void);
 static void WriteFlash(void);
@@ -131,6 +133,7 @@ void setup(){
     PRA.addValue(0);
     YRA.addValue(0);
   }                
+  
   display.clearDisplay();
   display.setTextColor(WHITE);
   if((digitalRead(S1_PIN) ? 1200 : 1800) > 1500){
@@ -144,29 +147,36 @@ void setup(){
   }
   ReadFlash();
 }
-
-void loop(){
-  if(PPM[BIND_AUX] > PPM_MAX_COMMAND) {  
-    current_protocol = PROTO_BAYANG;   
-    if(PPM[YAW] < PPM_MIN_COMMAND){
-      set_txid(true);
+static bool reset=true;
+void loop()
+{
+    if(reset || PPM[BIND_AUX] > PPM_MAX_COMMAND) {
+        reset = false;
+        selectProtocol();
+        NRF24L01_Reset();
+        NRF24L01_Initialize();
+         Bayang_init();
+    Bayang_bind();
     }
-    
-    EEPROM.update(ee_PROTOCOL_ID, current_protocol);
-    while(PPM[THROTTLE] > PPM_SAFE_THROTTLE) {
-      delay(100);
-      update_ppm();
-    }
-
-    NRF24L01_Reset();
-    NRF24L01_Initialize();
-    Bayang_init();
-		Bayang_bind();
-  }
-  process_Bayang();
-	update_ppm();
+    process_Bayang();
+  update_ppm();
 }
+void selectProtocol()
+{
+    uint8_t count = 10;
 
+    current_protocol = PROTO_BAYANG;   
+    if(PPM[YAW] < PPM_MIN_COMMAND)   // Rudder left
+        set_txid(true);                      // Renew Transmitter ID
+    
+     // update eeprom 
+    EEPROM.update(ee_PROTOCOL_ID, current_protocol);
+    // wait for safe throttle
+    while(PPM[THROTTLE] > PPM_SAFE_THROTTLE) {
+        delay(100);
+        update_ppm();
+    }
+}
 void set_txid(bool renew){
   uint8_t i;
   for(i=0; i<4; i++){
@@ -192,7 +202,6 @@ void update_ppm(){
   PPM[YAW]      = YRA.getFastAverage() + YOffSet;
 
   PPM[FLIP_AUX]    = digitalRead(S2_PIN) ? 1200 : 1800;
-  //PPM[ANGLE]  = digitalRead(S1_PIN) ? 1200 : 1800;
 
   if(bShowSticks && !bIsCalib){
     ShowSticks();
@@ -201,10 +210,12 @@ void update_ppm(){
     CalibSticks();
   }
   else{
-    if(PPM[ROLL]  > 1465 && PPM[ROLL]  < 1495) PPM[ROLL]   = 1481;
-    if(PPM[PITCH] > 1465 && PPM[PITCH] < 1495) PPM[PITCH]  = 1481;
-    if(PPM[YAW]   > 1465 && PPM[YAW]   < 1495) PPM[YAW]    = 1481;
-    }
+    if(PPM[ROLL]  > 1485 && PPM[ROLL]  < 1515) PPM[ROLL]   = 1500;
+    if(PPM[PITCH] > 1485 && PPM[PITCH] < 1515) PPM[PITCH]  = 1500;
+    if(PPM[YAW]   > 1485 && PPM[YAW]   < 1515) PPM[YAW]    = 1500;
+  }
+
+    PPM[THROTTLE] = 1000;
 }
 
 
