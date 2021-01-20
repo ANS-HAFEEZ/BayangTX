@@ -9,10 +9,10 @@
 #define OLED_DC    10
 
 //////////////////////////////////////////////////////// Sticks and Buttons ///////////////////////////////////////////////////////
-#define T_PIN  A0
-#define R_PIN  A1
-#define P_PIN  A2
-#define Y_PIN  A3
+#define T_PIN  A1
+#define R_PIN  A2
+#define P_PIN  A3
+#define Y_PIN  A0
 
 #define B1_PIN  6
 #define B2_PIN  5
@@ -33,13 +33,13 @@
 
 #define ledPin    13 // LED  - D13
 // SPI outputs
-#define MOSI_on PORTD |= _BV(2)  // PD3
-#define MOSI_off PORTD &= ~_BV(2)// PD3
-#define SCK_on PORTD |= _BV(3)   // PD4
-#define SCK_off PORTD &= ~_BV(3) // PD4
-#define CE_on PORTD |= _BV(4)    // PD5
-#define CE_off PORTD &= ~_BV(4)  // PD5
-#define CS_on PORTC |= _BV(5)    // PC1
-#define CS_off PORTC &= ~_BV(5)  // PC1
+#define MOSI_on PORTD   |= _BV(2)   // PD3
+#define MOSI_off PORTD  &= ~_BV(2)  // PD3
+#define SCK_on PORTD    |= _BV(3)   // PD4
+#define SCK_off PORTD   &= ~_BV(3)  // PD4
+#define CE_on PORTD     |= _BV(4)   // PD5
+#define CE_off PORTD    &= ~_BV(4)  // PD5
+#define CS_on PORTC     |= _BV(5)   // PC1
+#define CS_off PORTC    &= ~_BV(5)  // PC1
 // SPI input
 #define  MISO_on (PINC & _BV(4)) // PC0

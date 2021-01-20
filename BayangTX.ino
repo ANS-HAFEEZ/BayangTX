@@ -136,7 +136,7 @@ void setup(){
   
   display.clearDisplay();
   display.setTextColor(WHITE);
-  if((digitalRead(S1_PIN) ? 1200 : 1800) > 1500){
+  if((digitalRead(S2_PIN) ? 1200 : 1800) < 1500){
     bShowSticks = true;
     display.setTextSize(2);
   }else{
@@ -148,17 +148,16 @@ void setup(){
   ReadFlash();
 }
 static bool reset=true;
-void loop()
-{
-    if(reset || PPM[BIND_AUX] > PPM_MAX_COMMAND) {
-        reset = false;
-        selectProtocol();
-        NRF24L01_Reset();
-        NRF24L01_Initialize();
-         Bayang_init();
+void loop(){
+  if(reset || PPM[BIND_AUX] > PPM_MAX_COMMAND) {
+    reset = false;
+    selectProtocol();
+    NRF24L01_Reset();
+    NRF24L01_Initialize();
+    Bayang_init();
     Bayang_bind();
-    }
-    process_Bayang();
+  }
+  process_Bayang();
   update_ppm();
 }
 void selectProtocol()
@@ -191,31 +190,45 @@ void set_txid(bool renew){
 }
 
 void update_ppm(){
-  TRA.addValue(constrain(map(analogRead(T_PIN),100,900,2000,1000),1000,1900));            
-  RRA.addValue(constrain(map(analogRead(R_PIN),0,1000,1000,2000),1050,1900));           
-  PRA.addValue(constrain(map(analogRead(P_PIN),0,1000,1000,2000),1050,1900));            
-  YRA.addValue(constrain(map(analogRead(Y_PIN),0,1000,1000,2000),1050,1900));  
+//  Serial.print("S1:");    Serial.print(digitalRead(S1_PIN));
+//  Serial.print("\tS2:");  Serial.print(digitalRead(S2_PIN));
+//  Serial.print("\tB1:");  Serial.print(digitalRead(B1_PIN));
+//  Serial.print("\tB2:");  Serial.print(digitalRead(B2_PIN));
+//  Serial.print("\tB3:");  Serial.print(digitalRead(B3_PIN));
+//  Serial.print("\tB4:");  Serial.println(digitalRead(B4_PIN));
+
+  TRA.addValue(constrain(map(analogRead(T_PIN),0,600,2000,1000),1050,1900));            
+  RRA.addValue(constrain(map(analogRead(R_PIN),0,700,1000,2000),1050,1900));           
+  PRA.addValue(constrain(map(analogRead(P_PIN),0,760,1000,2000),1050,1900));            
+  YRA.addValue(constrain(map(analogRead(Y_PIN),0,750,1000,2000),1050,1900));  
 
   PPM[THROTTLE] = TRA.getFastAverage() + TOffSet;
   PPM[ROLL]     = RRA.getFastAverage() + ROffSet;
   PPM[PITCH]    = PRA.getFastAverage() + POffSet;
   PPM[YAW]      = YRA.getFastAverage() + YOffSet;
+//
+  PPM[FLIP_AUX]    = digitalRead(S1_PIN) ? 1200 : 1800;
 
-  PPM[FLIP_AUX]    = digitalRead(S2_PIN) ? 1200 : 1800;
 
-  if(bShowSticks && !bIsCalib){
-    ShowSticks();
-  }
-  else if(bIsCalib){
-    CalibSticks();
-  }
-  else{
-    if(PPM[ROLL]  > 1485 && PPM[ROLL]  < 1515) PPM[ROLL]   = 1500;
-    if(PPM[PITCH] > 1485 && PPM[PITCH] < 1515) PPM[PITCH]  = 1500;
-    if(PPM[YAW]   > 1485 && PPM[YAW]   < 1515) PPM[YAW]    = 1500;
-  }
+//  Serial.print("T:");      Serial.print(PPM[THROTTLE]);
+//  Serial.print("\tR:");    Serial.print(PPM[ROLL]);
+//  Serial.print("\tP:");    Serial.print(PPM[PITCH]);
+//  Serial.print("\tY:");    Serial.print(PPM[YAW]);
+//  Serial.print("\tAUX:");  Serial.println(PPM[FLIP_AUX]);
 
-    PPM[THROTTLE] = 1000;
+//
+//  if(bShowSticks && !bIsCalib){
+//    ShowSticks();
+//  }
+//  else if(bIsCalib){
+//    CalibSticks();
+//  }
+//  else{
+//    if(PPM[ROLL]  > 1485 && PPM[ROLL]  < 1515) PPM[ROLL]   = 1500;
+//    if(PPM[PITCH] > 1485 && PPM[PITCH] < 1515) PPM[PITCH]  = 1500;
+//    if(PPM[YAW]   > 1485 && PPM[YAW]   < 1515) PPM[YAW]    = 1500;
+//  }
+//  PPM[THROTTLE] = 1000;
 }
 
 
@@ -224,6 +237,14 @@ static void ReadFlash(){
   EEPROM.get(4, ROffSet);
   EEPROM.get(8, POffSet);
   EEPROM.get(12, YOffSet);
+
+  if(abs(TOffSet)> 0 && abs(ROffSet) > 0 && abs(POffSet) > 0 && abs(YOffSet) > 0){}
+  else{
+    TOffSet = 0;
+    ROffSet = 0;
+    POffSet = 0;
+    YOffSet = 0;
+  }
 }
 
 static void WriteFlash(){
@@ -242,9 +263,9 @@ static void ShowSticks(){
     display.setCursor(0,45); display.print(F("Y: "));
     
     display.setCursor(22,0);  display.print(PPM[THROTTLE]);
-    display.setCursor(22,15); display.print(PPM[ROLL]   + 19);
-    display.setCursor(22,30); display.print(PPM[PITCH]  + 19);
-    display.setCursor(22,45); display.print(PPM[YAW]    + 19);
+    display.setCursor(22,15); display.print(PPM[ROLL]);
+    display.setCursor(22,30); display.print(PPM[PITCH]);
+    display.setCursor(22,45); display.print(PPM[YAW]  );
     display.display();
   }else{
     display.clearDisplay();
