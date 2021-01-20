@@ -198,9 +198,9 @@ void update_ppm(){
 //  Serial.print("\tB4:");  Serial.println(digitalRead(B4_PIN));
 
   TRA.addValue(constrain(map(analogRead(T_PIN),0,600,2000,1000),1050,1900));            
-  RRA.addValue(constrain(map(analogRead(R_PIN),0,700,1000,2000),1050,1900));           
-  PRA.addValue(constrain(map(analogRead(P_PIN),0,760,1000,2000),1050,1900));            
-  YRA.addValue(constrain(map(analogRead(Y_PIN),0,750,1000,2000),1050,1900));  
+  RRA.addValue(constrain(map(analogRead(R_PIN),0,730,1000,2000),1050,1900));           
+  PRA.addValue(constrain(map(analogRead(P_PIN),0,800,1000,2000),1050,1900));            
+  YRA.addValue(constrain(map(analogRead(Y_PIN),0,780,1000,2000),1050,1900));  
 
   PPM[THROTTLE] = TRA.getFastAverage() + TOffSet;
   PPM[ROLL]     = RRA.getFastAverage() + ROffSet;
@@ -216,19 +216,18 @@ void update_ppm(){
 //  Serial.print("\tY:");    Serial.print(PPM[YAW]);
 //  Serial.print("\tAUX:");  Serial.println(PPM[FLIP_AUX]);
 
-//
-//  if(bShowSticks && !bIsCalib){
-//    ShowSticks();
-//  }
-//  else if(bIsCalib){
-//    CalibSticks();
-//  }
-//  else{
-//    if(PPM[ROLL]  > 1485 && PPM[ROLL]  < 1515) PPM[ROLL]   = 1500;
-//    if(PPM[PITCH] > 1485 && PPM[PITCH] < 1515) PPM[PITCH]  = 1500;
-//    if(PPM[YAW]   > 1485 && PPM[YAW]   < 1515) PPM[YAW]    = 1500;
-//  }
-//  PPM[THROTTLE] = 1000;
+  if(bShowSticks && !bIsCalib){
+    ShowSticks();
+  }
+  else if(bIsCalib){
+    CalibSticks();
+  }
+  else{
+    if(PPM[ROLL]  > 1485 && PPM[ROLL]  < 1515) PPM[ROLL]   = 1500;
+    if(PPM[PITCH] > 1485 && PPM[PITCH] < 1515) PPM[PITCH]  = 1500;
+    if(PPM[YAW]   > 1485 && PPM[YAW]   < 1515) PPM[YAW]    = 1500;
+  }
+
 }
 
 
