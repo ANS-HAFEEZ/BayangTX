@@ -22,24 +22,21 @@
 #define S1_PIN  7
 #define S2_PIN  8
 
-///////////////////////////////////////////////////////////// nRF24l0  ///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////// CC2500  ///////////////////////////////////////////////////////////////
 
-//SPI Comm.pins with nRF24L01
-#define MOSI_pin  2  // MOSI - D3
-#define SCK_pin   3  // SCK  - D4
-#define CE_pin    4  // CE   - D5
-#define MISO_pin  A4 // MISO - A0
-#define CS_pin    A5 // CS   - A1
+#define MO_pin 5    //D5
+#define MI_pin 6    //D6
+#define SCLK_pin 4  //D4
+#define CS 2        //D2
 
-#define ledPin    13 // LED  - D13
-// SPI outputs
-#define MOSI_on PORTD   |= _BV(2)   // PD3
-#define MOSI_off PORTD  &= ~_BV(2)  // PD3
-#define SCK_on PORTD    |= _BV(3)   // PD4
-#define SCK_off PORTD   &= ~_BV(3)  // PD4
-#define CE_on PORTD     |= _BV(4)   // PD5
-#define CE_off PORTD    &= ~_BV(4)  // PD5
-#define CS_on PORTC     |= _BV(5)   // PC1
-#define CS_off PORTC    &= ~_BV(5)  // PC1
-// SPI input
-#define  MISO_on (PINC & _BV(4)) // PC0
+#define  SCK_on PORTD |= 0x10//D4
+#define  SCK_off PORTD &= 0xEF//D4
+
+#define  MO_on PORTD |= 0x20  //D5 
+#define  MO_off PORTD &= 0xDF //D5
+//
+#define  MI_1 (PIND & 0x40) == 0x40 //D6 input
+#define  MI_0 (PIND & 0x40) == 0x00 //D6
+//
+#define  CS_on PORTD |= 0x04 //D2
+#define  CS_off PORTD &= 0xFB //D2 
