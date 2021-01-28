@@ -17,6 +17,19 @@
 #define SPIBB
 
 
+#define RRangeMax 730
+#define PRangeMax 800
+#define TRangeMax 600
+#define YRangeMax 780
+
+
+#define SticksMin  1050
+#define SticksMax  1900
+
+#define MinMap  1000
+#define MaxMap  2000
+
+
 #define LED_pin A3
 #define LED_ON  PORTC |= _BV(3);
 #define LED_OFF  PORTC &= ~_BV(3);
@@ -234,16 +247,16 @@ void update_ppm(){
 //  Serial.print("\tB3:");  Serial.print(digitalRead(B3_PIN));
 //  Serial.print("\tB4:");  Serial.println(digitalRead(B4_PIN));
 
-  TRA.addValue(constrain(map(analogRead(T_PIN),0,600,2000,1000),1050,1900));            
-  RRA.addValue(constrain(map(analogRead(R_PIN),0,730,1000,2000),1050,1900));           
-  PRA.addValue(constrain(map(analogRead(P_PIN),0,800,1000,2000),1050,1900));            
-  YRA.addValue(constrain(map(analogRead(Y_PIN),0,780,1000,2000),1050,1900));  
+  TRA.addValue(constrain(map(ReadT,0,TRangeMax,MaxMap,MinMap),SticksMin,SticksMax));
+  RRA.addValue(constrain(map(ReadR,0,RRangeMax,MinMap,MaxMap),SticksMin,SticksMax));           
+  PRA.addValue(constrain(map(ReadP,0,PRangeMax,MinMap,MaxMap),SticksMin,SticksMax));            
+  YRA.addValue(constrain(map(ReadY,0,YRangeMax,MinMap,MaxMap),SticksMin,SticksMax)); 
 
   PPM[THROTTLE] = TRA.getFastAverage() + TOffSet;
   PPM[ROLL]     = RRA.getFastAverage() + ROffSet;
   PPM[PITCH]    = PRA.getFastAverage() + POffSet;
   PPM[YAW]      = YRA.getFastAverage() + YOffSet;
-//
+
   PPM[ARM_AUX]  = digitalRead(S1_PIN) ? 1200 : 1800;
   PPM[ACRO_AUX] = digitalRead(S2_PIN) ? 1200 : 1800;
     
@@ -254,18 +267,20 @@ void update_ppm(){
 //  Serial.print("\tY:");    Serial.print(PPM[YAW]);
 //  Serial.print("\tAUX:");  Serial.println(PPM[FLIP_AUX]);
 
-  if(bShowSticks && !bIsCalib){
+  if(bShowSticks && !bIsCalib)
+  {
     ShowSticks();
   }
-  else if(bIsCalib){
+  else if(bIsCalib)
+  {
     CalibSticks();
   }
-  else{
+  else
+  {
     if(PPM[ROLL]  > 1485 && PPM[ROLL]  < 1515) PPM[ROLL]   = 1500;
     if(PPM[PITCH] > 1485 && PPM[PITCH] < 1515) PPM[PITCH]  = 1500;
     if(PPM[YAW]   > 1485 && PPM[YAW]   < 1515) PPM[YAW]    = 1500;
   }
-
 }
 
 
