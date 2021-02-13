@@ -301,14 +301,14 @@ void loop(){
 	uint8_t count=0;
 
 	while(1){
-		while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off)
+		while(remote_callback==0 || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){
 			if(!Update_All()){
 				cli();								// Disable global int due to RW of 16 bits registers
 				OCR1A=TCNT1;						// Callback should already have been called... Use "now" as new sync point.
 				sei();								// Enable global int
 			}
+		}
 		TX_MAIN_PAUSE_on;
-		
 		next_callback=remote_callback()<<1;
 		TX_MAIN_PAUSE_off;
 		

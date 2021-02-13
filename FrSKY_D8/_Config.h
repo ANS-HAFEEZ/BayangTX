@@ -33,7 +33,7 @@
 //Once a good tuning value is found it can be set here and will override the radio's 'option' setting for all existing and new models which use that protocol.
 //For more information: https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/tree/master/docs/Frequency_Tuning.md
 //Uncomment the lines below (remove the "//") and set an appropriate value (replace the "0") to enable. Valid range is -127 to +127.
-//#define FORCE_FRSKYD_TUNING	0
+#define FORCE_FRSKYD_TUNING	0
 //#define FORCE_FRSKYX_TUNING	0
 
 
