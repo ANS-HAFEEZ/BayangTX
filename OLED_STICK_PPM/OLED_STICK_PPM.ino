@@ -7,36 +7,7 @@
 #include "RunningAverage.h"
 #include "PPMEncoder.h"
 #include "pins.h"
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
-//#define INPUT_FREQUENCY 50
-//
-//#define CHANNEL_MAX  2000
-//#define CHANNEL_MIN 1000
-//#define CHANNEL_MID 1500
-//#define CHANNEL_NUMBER 7
-//
-//#define ANALOG_INPUTS 4
-//#define DIGITAL_INPUTS 2
-//
-//#define FRAME_LENGTH 22500  //set the PPM frame length in microseconds (1ms = 1000µs)
-//#define PULSE_LENGTH 300  //set the pulse length
-//#define onState 1  //set polarity of the pulses: 1 is positive, 0 is negative
-//#define sigPin 3  //set PPM signal output pin on the arduino
-//
-//int analogInputPins[ANALOG_INPUTS] = {R_PIN, P_PIN, T_PIN, Y_PIN};
-//int digitalInputPins[DIGITAL_INPUTS] = {S1_PIN, S2_PIN};
-//int switchPins[1] = {10};
-//
-//int channel_input[ANALOG_INPUTS]  = {};
-//int channel_center[ANALOG_INPUTS] = {};
-//int channel_min[ANALOG_INPUTS]    = {};
-//int channel_max[ANALOG_INPUTS]    = {};
-//
-//int PPM[CHANNEL_NUMBER];
-//
-//int prevSwitch = LOW;
-//byte currentState = LOW;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, 0);
@@ -90,44 +61,6 @@ void setup(){
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-
-
-
-//  //initiallize default ppm values
-//  for (int i=0; i<CHANNEL_NUMBER; i++){
-//      PPM[i]= CHANNEL_MID;
-//  }
-//
-//  PPM[CHANNEL_NUMBER - 1] = 1000;
-//
-//  for (int i = 0; i < sizeof(digitalInputPins); i++) {
-//    pinMode(digitalInputPins[i], INPUT_PULLUP);
-//  }
-//
-//  for (int i = 0; i < ANALOG_INPUTS; i++) {
-//    channel_center[i] = analogRead(analogInputPins[i]);
-//  }
-//
-//  pinMode(switchPins[0], INPUT_PULLUP);
-//
-//  pinMode(sigPin, OUTPUT);
-//  digitalWrite(sigPin, !onState);  //set the PPM signal pin to the default state (off)
-//
-//  cli();
-//  TCCR1A = 0; // set entire TCCR1 register to 0
-//  TCCR1B = 0;
-//  
-//  OCR1A = 100;  // compare match register, change this
-//  TCCR1B |= (1 << WGM12);  // turn on CTC mode
-//  TCCR1B |= (1 << CS11);  // 8 prescaler: 0,5 microseconds at 16mhz
-//  TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
-//  sei();
-  
-
-
-  
-
-
   
   pinMode(T_PIN,INPUT_PULLUP);
   pinMode(R_PIN,INPUT_PULLUP);
@@ -168,29 +101,6 @@ void setup(){
   ReadFlash();
 }
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//void process_analog_channel(int channel) {
-//  channel_input[channel] = analogRead(analogInputPins[channel]);
-//
-//  int diff = channel_center[channel] - channel_input[channel];
-//
-//  if (diff > channel_max[channel]) {
-//    channel_max[channel] = diff;
-//  }
-//
-//  if (diff < channel_min[channel]) {
-//    channel_min[channel] = diff;
-//  }
-//
-//  if (diff > 0) {
-//    PPM[channel] = map(diff, 0, channel_max[channel], CHANNEL_MID, CHANNEL_MAX);
-//  } else {
-//    PPM[channel] = map(diff, channel_min[channel], 0, CHANNEL_MIN, CHANNEL_MID);
-//  }
-//  
-//}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop()
 {
 //  Serial.print("S1:");    Serial.print(digitalRead(S1_PIN));
@@ -200,9 +110,9 @@ void loop()
 //  Serial.print("\tB3:");  Serial.print(digitalRead(B3_PIN));
 //  Serial.print("\tB4:");  Serial.println(digitalRead(B4_PIN));
 
-  TRA.addValue(constrain(map(analogRead(T_PIN),0,600,2000,1000),1050,1900));            
+  TRA.addValue(constrain(map(analogRead(T_PIN),20,720,2000,1000),1050,1900));            
   RRA.addValue(constrain(map(analogRead(R_PIN),0,730,1000,2000),1050,1900));           
-  PRA.addValue(constrain(map(analogRead(P_PIN),0,800,1000,2000),1050,1900));            
+  PRA.addValue(constrain(map(analogRead(P_PIN),0,780,1000,2000),1050,1900));            
   YRA.addValue(constrain(map(analogRead(Y_PIN),0,780,1000,2000),1050,1900));  
 
 
@@ -214,58 +124,10 @@ void loop()
   PPM[ARM]      = digitalRead(S1_PIN) ? 1200 : 1800;
   PPM[ACRO]     = digitalRead(S2_PIN) ? 1200 : 1800;
 
-  PPM[AUX1] = 1200;
-  PPM[AUX2] = 1800;
-
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-//    for (int i = 0; i < ANALOG_INPUTS; i++) {
-//    process_analog_channel(i);
-//  }
-//
-//  for (int i = 0; i < DIGITAL_INPUTS; i++) {
-//    if (digitalRead(digitalInputPins[i]) == LOW) {
-//      PPM[i + ANALOG_INPUTS] = 2000;
-//    } else {
-//      PPM[i + ANALOG_INPUTS] = 1000;
-//    }
-//  }
-//
-//  int swPin = digitalRead(switchPins[0]);
-//
-//  if (swPin == LOW && prevSwitch == HIGH) {
-//    currentState = !currentState;
-//  }
-//
-//  if (currentState == HIGH) {
-//    PPM[CHANNEL_NUMBER - 1] = 2000;
-//  } else {
-//    PPM[CHANNEL_NUMBER - 1] = 1000;
-//  }
-//
-//  prevSwitch = swPin;
-//  
-//  delay(1000 / INPUT_FREQUENCY);
-  ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  Serial.print("R:");      Serial.print(PPM[ROLL]);
-  Serial.print("\tP:");    Serial.print(PPM[PITCH]);
-  Serial.print("\tT:");    Serial.print(PPM[THROTTLE]);
-  Serial.print("\tY:");    Serial.print(PPM[RUDDER]);
-  Serial.print("\tAUX:");  Serial.println(PPM[ACRO]);
+//    Serial.print("R:");      Serial.print(PPM[ROLL]);
+//    Serial.print("\tP:");    Serial.print(PPM[PITCH]);
+//    Serial.print("\tT:");    Serial.print(PPM[THROTTLE]);
+//    Serial.print("\tY:");    Serial.println(PPM[RUDDER]);
 
   if(bShowSticks && !bIsCalib)
   {
@@ -277,9 +139,24 @@ void loop()
   }
   else
   {
-    if(PPM[ROLL]  > 1465 && PPM[ROLL]  < 1495) PPM[ROLL]   = 1481;
-    if(PPM[PITCH] > 1465 && PPM[PITCH] < 1495) PPM[PITCH]  = 1481;
-    if(PPM[RUDDER]   > 1465 && PPM[RUDDER]   < 1495) PPM[RUDDER]    = 1481;
+    if(PPM[THROTTLE]  < 1100){ 
+      PPM[THROTTLE]   = 1100;
+    }
+    
+    if(PPM[ROLL]  > 1480 && PPM[ROLL]  < 1520){ 
+      PPM[ROLL]   = 1500;
+    }
+    if(PPM[PITCH] > 1480 && PPM[PITCH] < 1520){
+      PPM[PITCH]  = 1500;
+    }
+    if(PPM[RUDDER]   > 1480 && PPM[RUDDER]   < 1520){
+      PPM[RUDDER]    = 1500;
+    }
+
+//    Serial.print("R:");      Serial.print(PPM[ROLL]);
+//    Serial.print("\tP:");    Serial.print(PPM[PITCH]);
+//    Serial.print("\tT:");    Serial.print(PPM[THROTTLE]);
+//    Serial.print("\tY:");    Serial.println(PPM[RUDDER]);
 
     ppmEncoder.setChannel(ROLL,     PPM[ROLL]);
     ppmEncoder.setChannel(PITCH,    PPM[PITCH]);
@@ -287,41 +164,8 @@ void loop()
     ppmEncoder.setChannel(RUDDER,   PPM[RUDDER]);
     ppmEncoder.setChannel(ARM,      PPM[ARM]);
     ppmEncoder.setChannel(ACRO,     PPM[ACRO]);
-    ppmEncoder.setChannel(AUX1,     PPM[AUX1]);
-    ppmEncoder.setChannel(AUX2,     PPM[AUX2]);
   }
 }
-
-//ISR(TIMER1_COMPA_vect){  //leave this alone
-//  static boolean state = true;
-//  
-//  TCNT1 = 0;
-//  
-//  if (state) {  //start pulse
-//    digitalWrite(sigPin, onState);
-//    OCR1A = PULSE_LENGTH * 2;
-//    state = false;
-//  } else{  //end pulse and calculate when to start the next pulse
-//    static byte cur_chan_numb;
-//    static unsigned int calc_rest;
-//  
-//    digitalWrite(sigPin, !onState);
-//    state = true;
-//
-//    if(cur_chan_numb >= CHANNEL_NUMBER){
-//      cur_chan_numb = 0;
-//      calc_rest = calc_rest + PULSE_LENGTH;// 
-//      OCR1A = (FRAME_LENGTH - calc_rest) * 2;
-//      calc_rest = 0;
-//    }
-//    else{
-//      OCR1A = (PPM[cur_chan_numb] - PULSE_LENGTH) * 2;
-//      calc_rest = calc_rest + PPM[cur_chan_numb];
-//      cur_chan_numb++;
-//    }     
-//  }
-//}
-
 
 static void ReadFlash(){
   EEPROM.get(0, TOffSet);
