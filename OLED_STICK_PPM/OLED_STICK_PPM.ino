@@ -12,10 +12,10 @@
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, 0);
 
-RunningAverage TRA(3);
-RunningAverage RRA(3);
-RunningAverage PRA(3);
-RunningAverage YRA(3);
+RunningAverage TRA(2);
+RunningAverage RRA(2);
+RunningAverage PRA(2);
+RunningAverage YRA(2);
 static bool bIsCalib       = false;
 static bool bShowSticks    = false;
 
@@ -41,13 +41,12 @@ enum chan_order{
 };
 
 #define PPM_MIN 1000
-#define PPM_SAFE_THROTTLE 1100 
 #define PPM_MID 1500
 #define PPM_MAX 2000
-#define PPM_MIN_COMMAND 1300
-#define PPM_MAX_COMMAND 1700
+int static RCDeadBandU = 1530;
+int static RCDeadBandL = 1470;
 
-static uint16_t PPM[CHANNELS] = {PPM_MIN,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID};//,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID};
+static uint16_t PPM[CHANNELS] = {PPM_MIN,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID,PPM_MID};
 
 static void ReadFlash(void);
 static void WriteFlash(void);
@@ -61,19 +60,27 @@ void setup(){
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
-  
+
   pinMode(T_PIN,INPUT_PULLUP);
   pinMode(R_PIN,INPUT_PULLUP);
   pinMode(P_PIN,INPUT_PULLUP);
   pinMode(Y_PIN,INPUT_PULLUP);
 
-  pinMode(S1_PIN,INPUT_PULLUP);
-  pinMode(S2_PIN,INPUT_PULLUP);
+  pinMode(S1_PIN,INPUT);
+  pinMode(S2_PIN,INPUT);
 
-  pinMode(B1_PIN,INPUT_PULLUP);
-  pinMode(B2_PIN,INPUT_PULLUP);
-  pinMode(B3_PIN,INPUT_PULLUP);
-  pinMode(B4_PIN,INPUT_PULLUP);
+  pinMode(R1_PIN,INPUT);
+  pinMode(R2_PIN,INPUT);
+  pinMode(L1_PIN,INPUT);
+  pinMode(L2_PIN,INPUT);
+  digitalWrite(S1_PIN,HIGH);
+  digitalWrite(S2_PIN,HIGH);
+
+  digitalWrite(L1_PIN,HIGH);
+  digitalWrite(L2_PIN,HIGH);
+  digitalWrite(R1_PIN,HIGH);
+  digitalWrite(R2_PIN,HIGH);
+  
  
   TRA.clear(); // explicitly start clean
   RRA.clear(); // explicitly start clean
@@ -89,7 +96,7 @@ void setup(){
   
   display.clearDisplay();
   display.setTextColor(WHITE);
-  if((digitalRead(S2_PIN) ? 1200 : 1800) < 1500){
+  if((digitalRead(L1_PIN) ? 1200 : 1800) > 1500 || (digitalRead(R1_PIN) ? 1200 : 1800) > 1500){
     bShowSticks = true;
     display.setTextSize(2);
   }else{
@@ -103,18 +110,10 @@ void setup(){
 
 void loop()
 {
-//  Serial.print("S1:");    Serial.print(digitalRead(S1_PIN));
-//  Serial.print("\tS2:");  Serial.print(digitalRead(S2_PIN));
-//  Serial.print("\tB1:");  Serial.print(digitalRead(B1_PIN));
-//  Serial.print("\tB2:");  Serial.print(digitalRead(B2_PIN));
-//  Serial.print("\tB3:");  Serial.print(digitalRead(B3_PIN));
-//  Serial.print("\tB4:");  Serial.println(digitalRead(B4_PIN));
-
-  TRA.addValue(constrain(map(analogRead(T_PIN),20,720,2000,1000),1050,1900));            
-  RRA.addValue(constrain(map(analogRead(R_PIN),0,730,1000,2000),1050,1900));           
-  PRA.addValue(constrain(map(analogRead(P_PIN),0,780,1000,2000),1050,1900));            
-  YRA.addValue(constrain(map(analogRead(Y_PIN),0,780,1000,2000),1050,1900));  
-
+  TRA.addValue(constrain(map(analogRead(T_PIN), 100,630,1000,2000),1050,1900));            
+  RRA.addValue(constrain(map(analogRead(R_PIN), 90 ,550,2000,1000),1050,1900));           
+  PRA.addValue(constrain(map(analogRead(P_PIN), 160,630,1000,2000),1050,1900));            
+  YRA.addValue(constrain(map(analogRead(Y_PIN), 110,620,2000,1000),1050,1900));  
 
   PPM[THROTTLE] = TRA.getFastAverage() + TOffSet;
   PPM[ROLL]     = RRA.getFastAverage() + ROffSet;
@@ -124,6 +123,56 @@ void loop()
   PPM[ARM]      = digitalRead(S1_PIN) ? 1200 : 1800;
   PPM[ACRO]     = digitalRead(S2_PIN) ? 1200 : 1800;
 
+  if(PPM[THROTTLE] < 1100){ 
+    PPM[THROTTLE] = 1100;
+  }
+
+////////////////////////////////////////////////////// ROLL ///////////////////////////////////////////////////////////////
+  if(PPM[ROLL] > RCDeadBandL && PPM[ROLL] < RCDeadBandU){ 
+    PPM[ROLL] = PPM_MID;
+  }
+  else
+  {
+    if(PPM[ROLL] > PPM_MID)
+    {
+      PPM[ROLL] = PPM_MID + PPM[ROLL] - RCDeadBandU;      
+    }
+    else
+    {
+      PPM[ROLL] = PPM_MID + PPM[ROLL] - RCDeadBandL;
+    }
+  }
+////////////////////////////////////////////////////// PITCH ///////////////////////////////////////////////////////////////
+  if(PPM[PITCH] > RCDeadBandL && PPM[PITCH] < RCDeadBandU){ 
+    PPM[PITCH] = PPM_MID;
+  }
+  else
+  {
+    if(PPM[PITCH] > PPM_MID)
+    {
+      PPM[PITCH] = PPM_MID + PPM[PITCH] - RCDeadBandU;      
+    }
+    else
+    {
+      PPM[PITCH] = PPM_MID + PPM[PITCH] - RCDeadBandL;
+    }
+  }
+////////////////////////////////////////////////////// RUDDER ///////////////////////////////////////////////////////////////
+  if(PPM[RUDDER] > RCDeadBandL && PPM[RUDDER] < RCDeadBandU){ 
+    PPM[RUDDER] = PPM_MID;
+  }
+  else
+  {
+    if(PPM[RUDDER] > PPM_MID)
+    {
+      PPM[RUDDER] = PPM_MID + PPM[RUDDER] - RCDeadBandU;      
+    }
+    else
+    {
+      PPM[RUDDER] = PPM_MID + PPM[RUDDER] - RCDeadBandL;
+    }
+  }
+  
 //    Serial.print("R:");      Serial.print(PPM[ROLL]);
 //    Serial.print("\tP:");    Serial.print(PPM[PITCH]);
 //    Serial.print("\tT:");    Serial.print(PPM[THROTTLE]);
@@ -139,25 +188,6 @@ void loop()
   }
   else
   {
-    if(PPM[THROTTLE]  < 1100){ 
-      PPM[THROTTLE]   = 1100;
-    }
-    
-    if(PPM[ROLL]  > 1480 && PPM[ROLL]  < 1520){ 
-      PPM[ROLL]   = 1500;
-    }
-    if(PPM[PITCH] > 1480 && PPM[PITCH] < 1520){
-      PPM[PITCH]  = 1500;
-    }
-    if(PPM[RUDDER]   > 1480 && PPM[RUDDER]   < 1520){
-      PPM[RUDDER]    = 1500;
-    }
-
-//    Serial.print("R:");      Serial.print(PPM[ROLL]);
-//    Serial.print("\tP:");    Serial.print(PPM[PITCH]);
-//    Serial.print("\tT:");    Serial.print(PPM[THROTTLE]);
-//    Serial.print("\tY:");    Serial.println(PPM[RUDDER]);
-
     ppmEncoder.setChannel(ROLL,     PPM[ROLL]);
     ppmEncoder.setChannel(PITCH,    PPM[PITCH]);
     ppmEncoder.setChannel(THROTTLE, PPM[THROTTLE]);
@@ -190,7 +220,8 @@ static void WriteFlash(){
 }
 
 static void ShowSticks(){
-  if((digitalRead(S1_PIN) ? 1200 : 1800) > 1500){
+  if((digitalRead(S1_PIN) ? 1200 : 1800) > 1500)
+  {
     display.clearDisplay();
     display.setCursor(0,0);  display.print(F("T: "));
     display.setCursor(0,15); display.print(F("R: "));
@@ -202,7 +233,9 @@ static void ShowSticks(){
     display.setCursor(22,30); display.print(PPM[PITCH]);
     display.setCursor(22,45); display.print(PPM[RUDDER]  );
     display.display();
-  }else{
+  }
+  else
+  {
     display.clearDisplay();
     display.setCursor(0,0);  display.print(F("T "));
     display.setCursor(0,15); display.print(F("R "));
@@ -215,22 +248,21 @@ static void ShowSticks(){
     display.setCursor(22,45); display.print(YOffSet);
     display.display();
   }
-
-  if((digitalRead(S2_PIN) ? 1200 : 1800) > 1500)
+  if((digitalRead(R1_PIN) ? 1800 : 1200) < 1500)
     bIsCalib = true;
 }
 
 static void CalibSticks(){
-    if((map(analogRead(R_PIN),0,1000,1000,2000))> 1700 && (map(analogRead(Y_PIN),0,1000,1000,2000))> 1700){
-      delay(500);
+    if(!digitalRead(L1_PIN)){
+      delay(1000);
       if(stick++>3) stick=0;
     }
     if(stick==THROTTLE){
-      if(analogRead(B1_PIN) <200 ){
+      if(!digitalRead(R2_PIN)){
         TOffSet++;
         delay(100);
       }
-      if(analogRead(B3_PIN) <200 ){
+      if(!digitalRead(L2_PIN)){
         TOffSet--;
         delay(100);
       }
@@ -242,11 +274,11 @@ static void CalibSticks(){
       display.display();
     }
     else if(stick==ROLL){
-      if(analogRead(B1_PIN) <200 ){
+      if(!digitalRead(R2_PIN)){
         ROffSet++;
         delay(100);
       }
-      if(analogRead(B3_PIN) <200 ){
+      if(!digitalRead(L2_PIN)){
         ROffSet--;
         delay(100);
       }
@@ -258,11 +290,11 @@ static void CalibSticks(){
       display.display();
     }
     else if(stick==PITCH){
-      if(analogRead(B1_PIN) <200 ){
+      if(!digitalRead(R2_PIN)){
         POffSet++;
         delay(100);
       }
-      if(analogRead(B3_PIN) <200 ){
+      if(!digitalRead(L2_PIN)){
         POffSet--;
         delay(100);
       }
@@ -275,11 +307,11 @@ static void CalibSticks(){
       display.display();
     }
     else if(stick==RUDDER){
-      if(analogRead(B1_PIN) <200 ){
+      if(!digitalRead(R2_PIN)){
         YOffSet++;
         delay(100);
       }
-      if(analogRead(B3_PIN) <200 ){
+      if(!digitalRead(L2_PIN)){
         YOffSet--;
         delay(100);
       }
@@ -291,12 +323,12 @@ static void CalibSticks(){
       display.display();
     }
 
-    if((digitalRead(S1_PIN) ? 1200 : 1800) > 1500){
+    if(((digitalRead(R2_PIN) ? 1800 : 1200 ) < 1500) && ((digitalRead(L2_PIN) ? 1800 : 1200) < 1500)){
       WriteFlash();
       display.clearDisplay();
       display.setCursor(0,0);   display.print(F("Saved"));
       display.display();
-      delay(3000);
+      delay(1000);
       display.clearDisplay();
       display.setCursor(0,0);   display.println(F("Please"));
       display.println(F("Reboot"));
