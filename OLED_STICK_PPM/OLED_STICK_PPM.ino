@@ -16,6 +16,8 @@ RunningAverage TRA(2);
 RunningAverage RRA(2);
 RunningAverage PRA(2);
 RunningAverage YRA(2);
+RunningAverage BRA(10);
+
 static bool bIsCalib       = false;
 static bool bShowSticks    = false;
 
@@ -24,8 +26,8 @@ static float ROffSet = 0;
 static float POffSet = 0;
 static float YOffSet = 0;
 static int stick=0;
-///////////////////////////////////////////////////////////////////////////////////////
 
+#define ReadBattery analogRead(A5)
 
 #define CHANNELS 8 // number of channels in ppm stream, 12 ideally
 #define PPM_PIN 10
@@ -65,6 +67,7 @@ void setup(){
   pinMode(R_PIN,INPUT_PULLUP);
   pinMode(P_PIN,INPUT_PULLUP);
   pinMode(Y_PIN,INPUT_PULLUP);
+  pinMode(A5,INPUT);
 
   pinMode(S1_PIN,INPUT);
   pinMode(S2_PIN,INPUT);
@@ -92,21 +95,47 @@ void setup(){
     RRA.addValue(0);
     PRA.addValue(0);
     YRA.addValue(0);
+    BRA.addValue(0);
   }                
   
   display.clearDisplay();
   display.setTextColor(WHITE);
+  display.setTextSize(9);
+  display.setCursor(12,0);
+  display.print(F("TX"));
+  display.display();
+  delay(2000);
   if((digitalRead(L1_PIN) ? 1200 : 1800) > 1500 || (digitalRead(R1_PIN) ? 1200 : 1800) > 1500){
     bShowSticks = true;
     display.setTextSize(2);
-  }else{
-    display.setTextSize(9);
-    display.setCursor(12,0);
-    display.print(F("TX"));
-    display.display();
   }
   ReadFlash();
 }
+
+static bool ShowOnce = false;
+static int BattVal;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //initial values for the kalman filter
+float x_est_last = 0;
+float P_last = 0;
+    //the noise in the system
+float Q = 0.00022;
+float R = 3.617;
+    
+float K;
+float P;
+float P_temp;
+float x_temp_est;
+float x_est;
+float z_measured; //the 'noisy' value we measured
+float z_real = 0.5; //the ideal value we wish to measure
+
+//  x_est_last = z_real + frand()*0.09;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 void loop()
 {
@@ -122,6 +151,62 @@ void loop()
 
   PPM[ARM]      = digitalRead(S1_PIN) ? 1200 : 1800;
   PPM[ACRO]     = digitalRead(S2_PIN) ? 1200 : 1800;
+
+  BRA.addValue(map(ReadBattery, 760,850,0,100));
+  BattVal = BRA.getFastAverage();
+
+  //do a prediction
+  x_temp_est = x_est_last;
+  P_temp = P_last + Q;
+  //calculate the Kalman gain
+  K = P_temp * (1.0/(P_temp + R));
+  //measure
+  z_measured = BattVal;// z_real + frand()*0.09; //the real measurement plus noise
+  //correct
+  x_est = x_temp_est + K * (z_measured - x_temp_est); 
+  P = (1- K) * P_temp;
+  //we have our new system
+
+  //update our last's
+  P_last = P;
+  x_est_last = x_est;
+
+
+  if(x_est_last < 0)
+  {
+    x_est_last = 0;
+  }  
+  if(PPM[ARM] < PPM_MID)
+  {
+    display.setTextSize(2);
+    display.clearDisplay();
+    display.setCursor(0,0);  display.print(F("Battery %"));
+    display.setTextSize(6);
+    display.setCursor(15,20);  display.print(int(x_est_last));
+    display.display();
+    //Serial.println(BattVal);
+    ShowOnce = true;
+  }
+  else
+  {
+    if(ShowOnce)
+    {  
+      ShowOnce = false;  
+      display.setTextSize(3);
+      display.clearDisplay();
+      display.setCursor(10,0);  display.print(F("ARM"));
+      display.setCursor(10,35);
+      if(PPM[ACRO] < PPM_MID)
+      {
+        display.print(F("ACRO"));
+      }
+      else
+      {
+        display.print(F("ANGLE"));
+      }
+      display.display();    
+    }
+  }
 
   if(PPM[THROTTLE] < 1100){ 
     PPM[THROTTLE] = 1100;
